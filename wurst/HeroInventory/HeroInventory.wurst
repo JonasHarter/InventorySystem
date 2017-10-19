@@ -2,11 +2,13 @@
 //TODO abstract inventory state with inheritance
 //TEMEMBER Item class and level useable
 // MAybe: stacksizes
+//TODO allow appropirate action in states (if in quip allow pickup equip)
 package HeroInventory
     import InventoryItems
     import Unit
     import Unit2
     import UnitIndexer2
+    import Player2
 
     int ITEM_BELT = 'I004'
     int ITEM_EQUIP = 'I005'
@@ -143,7 +145,6 @@ package HeroInventory
 
         function useItemn(int fromSlot)
             print("1")
-            skip
     
         function moveItem(int toSlot)
             print("2")
@@ -155,24 +156,23 @@ package HeroInventory
             print("4")
     
         function pickupItemOrder(item itm)
-            print("5")
+            if state == InventoryState.Equip
+                hero.abortOrder()
+                hero.getOwner().simulateError("No")
 
         function switchToBelt()
-            print("ToBelt")
             saveCurrentInventoryItems()
             clearInventory()
             beltItems.fillIntoUnit(hero)
             state = InventoryState.Belt
 
         function switchToEquip()
-            print("ToEquip")
             saveCurrentInventoryItems()
             clearInventory()
             equipItems.fillIntoUnit(hero)
             state = InventoryState.Equip
 
         function switchToBack()
-            print("ToBack")
             saveCurrentInventoryItems()
             clearInventory()
             backItems.fillIntoUnit(hero)
