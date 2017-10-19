@@ -1,0 +1,192 @@
+//TODO unhock triggers / block execution to prevent activation on trigger action
+//TODO abstract inventory state with inheritance
+//TEMEMBER Item class and level useable
+// MAybe: stacksizes
+package HeroInventory
+    import InventoryItems
+    import Unit
+    import Unit2
+    import UnitIndexer2
+
+    int ITEM_BELT = 'I004'
+    int ITEM_EQUIP = 'I005'
+    int ITEM_BACK = 'I003'
+
+    HeroInventory array heroInventories
+
+    enum InventoryState
+        Belt
+        Equip
+        Back
+
+    init
+        CreateTrigger()
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_USE_ITEM)
+            ..addAction(function switchState)
+        CreateTrigger()
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_ISSUED_TARGET_ORDER)
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_ISSUED_POINT_ORDER)
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_ISSUED_ORDER)
+            ..addAction(function trackItemUsage)
+        CreateTrigger()
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_DROP_ITEM)
+            ..addAction(function dropItem)
+        CreateTrigger()
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_PICKUP_ITEM)
+            ..addAction(function pickupItem)
+        CreateTrigger()
+            ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_ISSUED_TARGET_ORDER)
+            ..addAction(function pickupItemOrder)
+        CreateTrigger()
+            ..registerTimerEvent(1.0, false)
+            ..addAction(function index)
+
+
+    // Tracks item movement and usage across the slots
+    function trackItemUsage()
+        int id = GetIssuedOrderId()
+        if id < 852001 or id > 852014
+            return
+        unit u = GetTriggerUnit()
+        HeroInventory heroInv = HeroInventory.getHeroInventory(u)
+        if heroInv == null
+            return
+        // Move item in inventory 852002-7
+        for int i = 0 to 5
+            int newId = 852002 + i
+            if id == newId
+                heroInv.moveItem(i)
+                return
+        // Use item 852008-13
+        for int i = 0 to 5
+            int newId = 852008 + i
+            if id == newId
+                heroInv.useItemn(i)
+                return
+
+    /*
+    Slot numbers
+    0 1
+    2 3
+    4 5
+    */
+
+    function dropItem()
+        unit u = GetTriggerUnit()
+        HeroInventory heroInv = HeroInventory.getHeroInventory(u)
+        if heroInv == null
+            return
+        heroInv.dropItem(GetManipulatedItem())
+
+    function pickupItem()
+        unit u = GetTriggerUnit()
+        HeroInventory heroInv = HeroInventory.getHeroInventory(u)
+        if heroInv == null
+            return
+        heroInv.pickupItem(GetManipulatedItem())
+
+    function pickupItemOrder()
+        item i = GetOrderTargetItem()
+        if i == null
+            return
+        unit u = GetTriggerUnit()
+        HeroInventory heroInv = HeroInventory.getHeroInventory(u)
+        if heroInv == null
+            return
+        heroInv.pickupItemOrder(i)
+
+    function switchState()
+        unit u = GetTriggerUnit()
+        HeroInventory heroInv = HeroInventory.getHeroInventory(u)
+        if heroInv == null
+            return
+        int itt = GetManipulatedItem().getTypeId()
+        if itt == ITEM_BELT
+            heroInv.switchToBelt()
+        else if itt == ITEM_EQUIP
+            heroInv.switchToEquip()
+        else if itt == ITEM_BACK
+            heroInv.switchToBack()
+
+    function index()
+        group g = GetUnitsInRectAll(GetPlayableMapRect())
+        for unit u in g
+            if u.isHero()
+                HeroInventory.createHeroInventory(u)
+        g.destr()
+            
+    class HeroInventory
+        private unit hero
+        private InventoryState state = InventoryState.Belt
+        private InventoryItems beltItems
+        private InventoryItems equipItems
+        private InventoryItems backItems
+
+        static function createHeroInventory(unit u)
+            HeroInventory hi = new HeroInventory(u)
+            heroInventories[u.getIndex()] = hi
+
+        static function getHeroInventory(unit u) returns HeroInventory
+            return heroInventories[u.getIndex()]
+
+        private construct(unit u)
+            hero = u
+            u.addItemInSlot(ITEM_BACK, 4)
+            u.addItemInSlot(ITEM_EQUIP, 5)
+            beltItems = new InventoryItems()
+            beltItems.bl = ITEM_BACK
+            beltItems.br = ITEM_EQUIP
+            equipItems = new InventoryItems()
+            equipItems.bl = ITEM_BELT
+            backItems = new InventoryItems()
+            backItems.br = ITEM_BELT
+
+        function useItemn(int fromSlot)
+            print("1")
+            skip
+    
+        function moveItem(int toSlot)
+            print("2")
+    
+        function dropItem(item itm)
+            print("3")
+    
+        function pickupItem(item itm)
+            print("4")
+    
+        function pickupItemOrder(item itm)
+            print("5")
+
+        function switchToBelt()
+            print("ToBelt")
+            saveCurrentInventoryItems()
+            clearInventory()
+            beltItems.fillIntoUnit(hero)
+            state = InventoryState.Belt
+
+        function switchToEquip()
+            print("ToEquip")
+            saveCurrentInventoryItems()
+            clearInventory()
+            equipItems.fillIntoUnit(hero)
+            state = InventoryState.Equip
+
+        function switchToBack()
+            print("ToBack")
+            saveCurrentInventoryItems()
+            clearInventory()
+            backItems.fillIntoUnit(hero)
+            state = InventoryState.Back
+
+        private function saveCurrentInventoryItems()
+            if state == InventoryState.Belt
+                beltItems.saveFromUnit(hero)
+            else if state == InventoryState.Equip
+                equipItems.saveFromUnit(hero)
+            else if state == InventoryState.Back
+                backItems.saveFromUnit(hero)
+
+        //TODO move into invItems
+        private function clearInventory()
+            for i = 0 to 5
+                hero.removeItemInSlot(i).remove()

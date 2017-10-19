@@ -1,0 +1,29 @@
+package InventoryItems
+    import Unit2
+    import Item
+
+    // TODO check slots
+    // TODO abstract item x slot
+    public class InventoryItems
+        int tl
+        int tr
+        int ml
+        int mr
+        int bl
+        int br
+
+        function saveFromUnit(unit u)
+            tl = u.getItemInSlot(0).getTypeId()
+            tr = u.getItemInSlot(1).getTypeId()
+            ml = u.getItemInSlot(2).getTypeId()
+            mr = u.getItemInSlot(3).getTypeId()
+            bl = u.getItemInSlot(4).getTypeId()
+            br = u.getItemInSlot(5).getTypeId()
+
+        function fillIntoUnit(unit u)
+            u.addItemInSlot(tl, 0)
+            u.addItemInSlot(tr, 1)
+            u.addItemInSlot(ml, 2)
+            u.addItemInSlot(mr, 3)
+            u.addItemInSlot(bl, 4)
+            u.addItemInSlot(br, 5)
