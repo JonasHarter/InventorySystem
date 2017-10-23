@@ -1,0 +1,10 @@
+package Equipment
+
+    class Equipment
+        unit hero
+
+        function equip()
+            skip
+
+        function unequip()
+            skip
