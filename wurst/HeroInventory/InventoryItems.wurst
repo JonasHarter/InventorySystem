@@ -1,7 +1,5 @@
 package InventoryItems
-    import Unit
     import Unit2
-    import Item    
     
     /*
     Slot numbers
@@ -33,9 +31,9 @@ package InventoryItems
         // Returns the slot or -1 if it fails
         function addItem(int itm) returns int
             for int i = 0 to 5
-                    if (items[i] == 0)
-                        items[i] = itm
-                        return i
+                if (items[i] == 0)
+                    items[i] = itm
+                    return i
             return -1
 
         function getItemInSlot(int slot) returns int

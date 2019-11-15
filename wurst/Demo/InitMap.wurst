@@ -1,0 +1,13 @@
+package InitMap
+    import UnitIds
+
+    init
+        CreateUnit(Player(0), UnitIds.bloodmage, 0, 0, 0.0)
+        CreateItem('mcri', 0, 0)
+        CreateItem('mcri', 0, 0)
+        CreateItem('mcri', 0, 0)
+        CreateItem('mcri', 0, 0)
+        CreateItem('plcl', 0, 0)
+        CreateItem('plcl', 0, 0)
+        CreateItem('plcl', 0, 0)
+        CreateItem('plcl', 0, 0)

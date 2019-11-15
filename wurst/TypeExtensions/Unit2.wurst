@@ -1,0 +1,12 @@
+package Unit2
+	public function unit.isHero() returns bool
+		return IsUnitType(this, UNIT_TYPE_HERO)
+		
+	public function unit.addItemInSlot(int itemID, int slotID)
+		UnitAddItemToSlotById(this, itemID, slotID)
+
+	public function unit.getItemInSlot(int slotID) returns item
+		return UnitItemInSlot(this, slotID)
+		
+	public function unit.dropItemInSlot(int slotID) returns item
+		return UnitRemoveItemFromSlot(this, slotID)

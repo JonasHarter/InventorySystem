@@ -1,0 +1,13 @@
+package Player2
+	
+	sound error
+	init
+		error = CreateSoundFromLabel("InterfaceError",false,false,false,10,10)
+	
+	/** Simulates an error message */
+	public function player.simulateError(string msg)
+		string msg2 = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n|cffffcc00"+msg+"|r"
+		if GetLocalPlayer() == this
+			ClearTextMessages()
+			DisplayTimedTextToPlayer( this, 0.52, 0.96, 2.00, msg2 )
+			StartSound(error)

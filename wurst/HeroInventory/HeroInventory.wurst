@@ -6,16 +6,13 @@
 // block actions while backpack
 // addItem triggers pickup, remove triggers drop
 // move triggers moveto and pickup
+//ammo, sockets
 package HeroInventory
     import InventoryItems
-    import Unit
     import Unit2
-    import UnitIndexer2
     import Player2
-
-    int ITEM_BELT = 'I004'
-    int ITEM_EQUIP = 'I005'
-    int ITEM_BACK = 'I003'
+    import UnitIndexer
+    import BaseObjects
 
     HeroInventory array heroInventories
 
@@ -56,6 +53,7 @@ package HeroInventory
         HeroInventory heroInv = HeroInventory.getHeroInventory(u)
         if heroInv == null
             return
+        //TODO unloop
         // Move item in inventory 852002-7
         for int i = 0 to 5
             int newId = 852002 + i
@@ -99,11 +97,11 @@ package HeroInventory
         if heroInv == null
             return
         int itt = GetManipulatedItem().getTypeId()
-        if itt == ITEM_BELT
+        if itt == BELT_ITEM_ID
             heroInv.switchToBelt()
-        else if itt == ITEM_EQUIP
+        else if itt == EQUIPPED_ITEM_ID
             heroInv.switchToEquip()
-        else if itt == ITEM_BACK
+        else if itt == BACKPACK_ITEM_ID
             heroInv.switchToBack()
 
     function index()
@@ -119,9 +117,10 @@ package HeroInventory
         private InventoryItems beltItems
         private InventoryItems equipItems
         private InventoryItems backItems
+        private boolean blockPickupTrigger = false
 
         static function createHeroInventory(unit u)
-            HeroInventory hi = new HeroInventory(u)
+            let hi = new HeroInventory(u)
             heroInventories[u.getIndex()] = hi
 
         static function getHeroInventory(unit u) returns HeroInventory
@@ -129,15 +128,15 @@ package HeroInventory
 
         private construct(unit u)
             hero = u
-            u.addItemInSlot(ITEM_BACK, 4)
-            u.addItemInSlot(ITEM_EQUIP, 5)
+            u.addItemInSlot(BACKPACK_ITEM_ID, 4)
+            u.addItemInSlot(EQUIPPED_ITEM_ID, 5)
             beltItems = new InventoryItems()
-            beltItems.setItemInSlot(ITEM_BACK, 4)
-            beltItems.setItemInSlot(ITEM_EQUIP, 5)
+            beltItems.setItemInSlot(BACKPACK_ITEM_ID, 4)
+            beltItems.setItemInSlot(EQUIPPED_ITEM_ID, 5)
             equipItems = new InventoryItems()
-            equipItems.setItemInSlot(ITEM_BELT, 4)
+            equipItems.setItemInSlot(BELT_ITEM_ID, 4)
             backItems = new InventoryItems()
-            backItems.setItemInSlot(ITEM_BELT, 5)
+            backItems.setItemInSlot(BELT_ITEM_ID, 5)
 
         function useItemOrder(int fromSlot)
             // Prevent item usage in equipment
@@ -151,49 +150,63 @@ package HeroInventory
                 hero.getOwner().simulateError("You cannot use items from your backpack")
                 return
     
+        // Handles moving an item to a slot
         function moveItemToSlotOrder(int toSlot)
-            InventoryItems oldState = new InventoryItems()
+            // Detect current item in target slot
+            let oldState = new InventoryItems()
             oldState.saveFromUnit(hero)
             item toItm = hero.getItemInSlot(toSlot)
             int toItmType = toItm.getTypeId()
             toItm.remove()
+            // Wait for moveorder to complete
+            blockPickupTrigger = true
             TriggerSleepAction(0)
-            InventoryItems newState = new InventoryItems()
+            blockPickupTrigger = false
+            // Detect new item in target slot
+            let newState = new InventoryItems()
             newState.saveFromUnit(hero)
             item fromItm = hero.getItemInSlot(toSlot)
             int fromItmType = fromItm.getTypeId()
             fromItm.remove()
             int fromSlot = oldState.findMissingItem(fromItmType, newState)
-            destroy oldState
             destroy newState
+            destroy oldState
             // Prevent moving of switch items
-            if fromItmType == ITEM_BELT or fromItmType == ITEM_EQUIP or fromItmType == ITEM_BACK
+            if isSwitchItem(fromItmType)
                 hero.addItemInSlot(toItmType, toSlot)
                 hero.addItemInSlot(fromItmType, fromSlot)
                 return
+            // Reset switch item if moved onto
+            if isSwitchItem(toItmType)
+                hero.addItemInSlot(toItmType, toSlot)
             // Move item to equip
-            if toItmType == ITEM_EQUIP
+            if toItmType == EQUIPPED_ITEM_ID
                 //TODO tryEquip
                 if (equipItems.addItem(fromItmType) == -1)
                     hero.addItemInSlot(fromItmType, fromSlot)
-                hero.addItemInSlot(toItmType, toSlot)
                 print("TODO Equip call")
                 return
             // Move item to backpack
-            if toItmType == ITEM_BACK
+            if toItmType == BACKPACK_ITEM_ID
                 if (backItems.addItem(fromItmType) == -1)
                     hero.addItemInSlot(fromItmType, fromSlot)
                     hero.getOwner().simulateError("Your backpack is full")
-                hero.addItemInSlot(toItmType, toSlot)
                 return
             // Move item to belt
-            if toItmType == ITEM_BELT
+            if toItmType == BELT_ITEM_ID
+                blockPickupTrigger = true
                 if (beltItems.addItem(fromItmType) == -1)
                     hero.addItemInSlot(fromItmType, fromSlot)
                     hero.getOwner().simulateError("Your belt is full")
                 if state == InventoryState.Equip
                     print("TODO Unequip call")
+                blockPickupTrigger = false
+                return
+            // Prevent moving within equipment
+            if state == InventoryState.Equip
                 hero.addItemInSlot(toItmType, toSlot)
+                hero.addItemInSlot(fromItmType, fromSlot)
+                hero.getOwner().simulateError("You cannot move items within your inventory")
                 return
             // Default action, switch items
             hero.addItemInSlot(toItmType, fromSlot)
@@ -206,6 +219,8 @@ package HeroInventory
             skip
     
         function pickupItemOrder(item itm)
+            if blockPickupTrigger
+                return
             if state == InventoryState.Equip
                 hero.abortOrder()
                 hero.getOwner().simulateError("You cannot pickup items from your equipment")
@@ -240,3 +255,9 @@ package HeroInventory
         private function clearInventory()
             for i = 0 to 5
                 hero.dropItemInSlot(i).remove()
+
+        private static function isSwitchItem(item itm) returns boolean
+            return isSwitchItem(itm.getTypeId())
+
+        private static function isSwitchItem(int itmTyp) returns boolean
+            return itmTyp == BELT_ITEM_ID or itmTyp == EQUIPPED_ITEM_ID or itmTyp == BACKPACK_ITEM_ID
